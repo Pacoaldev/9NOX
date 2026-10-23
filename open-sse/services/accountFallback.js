@@ -230,7 +230,10 @@ export function applyErrorState(account, status, errorText) {
     ...account,
     rateLimitedUntil: cooldownMs > 0 ? getUnavailableUntil(cooldownMs) : null,
     backoffLevel: newBackoffLevel ?? backoffLevel,
-    lastError: { status, message: errorText, timestamp: new Date().toISOString() },
+    // Store a string — UI and auth helpers call .slice / render as React children
+    lastError: typeof errorText === "string" && errorText
+      ? errorText.slice(0, 200)
+      : (status ? `HTTP ${status}` : "Provider error"),
     status: "error"
   };
 }

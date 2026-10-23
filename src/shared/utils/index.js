@@ -13,13 +13,38 @@ import { v4 as uuidv4 } from "uuid";
 export const generateId = uuidv4;
 
 /**
+ * Coerce connection lastError to a displayable string.
+ * Some writers historically stored `{ status, message, timestamp }` objects;
+ * React cannot render those as children.
+ * @param {unknown} lastError
+ * @returns {string|null}
+ */
+export function formatLastError(lastError) {
+  if (lastError == null || lastError === "") return null;
+  if (typeof lastError === "string") return lastError;
+  if (typeof lastError === "object") {
+    const msg = typeof lastError.message === "string" ? lastError.message.trim() : "";
+    if (msg) return msg;
+    if (lastError.status != null) return `HTTP ${lastError.status}`;
+    try {
+      return JSON.stringify(lastError);
+    } catch {
+      return "Provider error";
+    }
+  }
+  return String(lastError);
+}
+
+/**
  * Extract error code from error message (401, 429, 503...)
- * @param {string} lastError - Error message
+ * @param {string|object} lastError - Error message (or legacy object)
  * @returns {string|null} Error code or null
  */
 export function getErrorCode(lastError) {
   if (!lastError) return null;
-  const match = lastError.match(/\b([45]\d{2})\b/);
+  const text = formatLastError(lastError);
+  if (!text) return null;
+  const match = text.match(/\b([45]\d{2})\b/);
   return match ? match[1] : "ERR";
 }
 

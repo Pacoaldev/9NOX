@@ -12,6 +12,23 @@ const OPTIONAL_FIELDS = [
 
 const MODEL_LOCK_PREFIX = "modelLock_";
 
+/** Coerce legacy object lastError to string (UI / .slice callers expect string). */
+function normalizeLastError(err) {
+  if (err == null || err === "") return null;
+  if (typeof err === "string") return err;
+  if (typeof err === "object") {
+    const msg = typeof err.message === "string" ? err.message.trim() : "";
+    if (msg) return msg;
+    if (err.status != null) return `HTTP ${err.status}`;
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return "Provider error";
+    }
+  }
+  return String(err);
+}
+
 function resetHealthStateOnActivation(existing, patch) {
   if (patch?.testStatus !== "active") return patch;
 
@@ -35,6 +52,9 @@ function resetHealthStateOnActivation(existing, patch) {
 function rowToConn(row) {
   if (!row) return null;
   const extra = parseJson(row.data, {});
+  if (Object.hasOwn(extra, "lastError")) {
+    extra.lastError = normalizeLastError(extra.lastError);
+  }
   return {
     ...extra,
     id: row.id,
@@ -269,6 +289,9 @@ export async function updateProviderConnection(id, data) {
     const existing = rowToConn(row);
     const normalized = resetHealthStateOnActivation(existing, data);
     const merged = { ...existing, ...normalized, updatedAt: new Date().toISOString() };
+    if (Object.hasOwn(merged, "lastError")) {
+      merged.lastError = normalizeLastError(merged.lastError);
+    }
     upsert(db, merged);
     if (data.priority !== undefined) reorderInTx(db, existing.provider);
     result = merged;

@@ -20,7 +20,7 @@ import {
   ANTHROPIC_COMPATIBLE_PREFIX,
 } from "@/shared/constants/providers";
 import Link from "next/link";
-import { getErrorCode, getRelativeTime } from "@/shared/utils";
+import { getErrorCode, getRelativeTime, formatLastError } from "@/shared/utils";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useHeaderSearchStore } from "@/store/headerSearchStore";
 import ModelAvailabilityBadge from "./components/ModelAvailabilityBadge";
@@ -76,7 +76,7 @@ function getConnectionErrorTag(connection) {
   if (fromMessage === "401" || fromMessage === "403") return "AUTH";
   if (fromMessage && fromMessage !== "ERR") return fromMessage;
 
-  const msg = (connection.lastError || "").toLowerCase();
+  const msg = (formatLastError(connection.lastError) || "").toLowerCase();
   if (
     msg.includes("runtime") ||
     msg.includes("not runnable") ||

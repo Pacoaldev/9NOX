@@ -3,11 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getStatusVariant as getConnectionStatusVariant } from "@/shared/utils/connectionStatus";
+import { formatLastError } from "@/shared/utils";
 import PropTypes from "prop-types";
 import { Badge, Toggle, Tooltip } from "@/shared/components";
 import CooldownTimer from "./CooldownTimer";
 
 export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst, isLast, onMoveUp, onMoveDown, onToggleActive, onUpdateProxy, onEdit, onDelete, oneByOneStatus = null, autoPing = null }) {
+  const lastErrorText = formatLastError(connection.lastError);
   const [showProxyDropdown, setShowProxyDropdown] = useState(false);
   const [updatingProxy, setUpdatingProxy] = useState(false);
   const proxyDropdownRef = useRef(null);
@@ -222,9 +224,9 @@ export default function ConnectionRow({ connection, proxyPools, isOAuth, isFirst
               </Badge>
             )}
             {isCooldown && connection.isActive !== false && <CooldownTimer until={modelLockUntil} />}
-            {connection.lastError && connection.isActive !== false && (
-              <span className="max-w-full truncate text-xs text-red-500 sm:max-w-[300px]" title={connection.lastError}>
-                {connection.lastError}
+            {lastErrorText && connection.isActive !== false && (
+              <span className="max-w-full truncate text-xs text-red-500 sm:max-w-[300px]" title={lastErrorText}>
+                {lastErrorText}
               </span>
             )}
             <span className="text-xs text-text-muted">#{connection.priority}</span>
