@@ -17,13 +17,16 @@ export default function CurrencySwitcher({
 
   const isControlled = typeof controlledOpen === "boolean";
   const isOpen = isControlled ? controlledOpen : internalOpen;
-  const setIsOpen = (value, nextCurrency = currency) => {
-    if (isControlled) {
-      if (!value && onClose) onClose(nextCurrency);
-    } else {
-      setInternalOpen(value);
-    }
-  };
+  const setIsOpen = useCallback(
+    (value, nextCurrency = currency) => {
+      if (isControlled) {
+        if (!value && onClose) onClose(nextCurrency);
+      } else {
+        setInternalOpen(value);
+      }
+    },
+    [isControlled, onClose, currency]
+  );
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -35,7 +38,7 @@ export default function CurrencySwitcher({
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   const handleSelect = async (code) => {
     await setCurrency(code);

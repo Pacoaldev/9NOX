@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Button, Toggle, Input } from "@/shared/components";
 import Modal, { ConfirmModal } from "@/shared/components/Modal";
 import LanguageSwitcher from "@/shared/components/LanguageSwitcher";
@@ -22,6 +23,7 @@ function getLocaleFromCookie() {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { theme, setTheme, isDark } = useTheme();
   const [locale, setLocale] = useState(() => getLocaleFromCookie());
   const [langOpen, setLangOpen] = useState(false);
@@ -85,11 +87,10 @@ export default function ProfilePage() {
   const [proxyLoading, setProxyLoading] = useState(false);
   const [proxyTestLoading, setProxyTestLoading] = useState(false);
 
-  const [isRemoteHost, setIsRemoteHost] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined")
-      setIsRemoteHost(!["localhost", "127.0.0.1", "::1"].includes(window.location.hostname));
-  }, []);
+  const [isRemoteHost] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  });
 
   useEffect(() => {
     fetch("/api/settings")
@@ -760,7 +761,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (res.ok) {
-        window.location.assign("/login");
+        router.push("/login");
       }
     } catch (err) {
       console.error("Failed to logout:", err);

@@ -53,7 +53,7 @@ function RecentRequests({ requests = [] }) {
         <div className="flex-1 flex items-center justify-center text-text-muted text-sm">No requests yet.</div>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          <table className="w-full min-w-[300px] border-collapse text-xs">
+          <table className="w-full min-w-75 border-collapse text-xs">
             <thead className="sticky top-0 bg-bg z-10">
               <tr className="border-b border-border">
                 <th className="py-1.5 text-left font-semibold text-text-muted w-2"></th>
@@ -70,7 +70,7 @@ function RecentRequests({ requests = [] }) {
                     <td className="py-1.5">
                       <span className={`block w-1.5 h-1.5 rounded-full ${ok ? "bg-success" : "bg-error"}`} />
                     </td>
-                    <td className="py-1.5 font-mono truncate max-w-[120px]" title={r.model}>{r.model}</td>
+                    <td className="py-1.5 font-mono truncate max-w-30" title={r.model}>{r.model}</td>
                     <td className="py-1.5 text-right whitespace-nowrap">
                       <span className="text-primary">{fmt(r.promptTokens)}↑</span>
                       {" "}

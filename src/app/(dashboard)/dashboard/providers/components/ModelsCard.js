@@ -291,7 +291,7 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
             </Button>
           )}
         </div>
-        {testError && <p className="text-xs text-red-500 mb-3 break-words">{testError}</p>}
+        {testError && <p className="text-xs text-red-500 mb-3 wrap-break-word">{testError}</p>}
 
         <div className="flex flex-wrap gap-3">
           {displayModels.map((model) => {
