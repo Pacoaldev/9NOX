@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Card, Button, Toggle, Input } from "@/shared/components";
 import Modal, { ConfirmModal } from "@/shared/components/Modal";
 import LanguageSwitcher from "@/shared/components/LanguageSwitcher";
+import CurrencySwitcher from "@/shared/components/CurrencySwitcher";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useTheme } from "@/shared/hooks/useTheme";
 import { cn } from "@/shared/utils/cn";
 import { APP_CONFIG } from "@/shared/constants/config";
@@ -23,6 +25,8 @@ export default function ProfilePage() {
   const { theme, setTheme, isDark } = useTheme();
   const [locale, setLocale] = useState(() => getLocaleFromCookie());
   const [langOpen, setLangOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const { currencyConfig } = useCurrency();
   const [shutdownOpen, setShutdownOpen] = useState(false);
   const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [settings, setSettings] = useState({ fallbackStrategy: "fill-first" });
@@ -859,6 +863,26 @@ export default function ProfilePage() {
           </button>
         </Card>
 
+        {/* Currency */}
+        <Card>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="size-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[20px]">payments</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold">Currency</h3>
+          </div>
+          <button
+            onClick={() => setCurrencyOpen(true)}
+            className="flex items-center justify-between w-full p-3 rounded-lg bg-bg border border-border hover:border-primary/50 transition-colors"
+          >
+            <div className="flex flex-col text-left">
+              <span className="text-sm font-medium">{currencyConfig.name}</span>
+              <span className="text-xs text-text-muted">{currencyConfig.code} ({currencyConfig.symbol})</span>
+            </div>
+            <span className="text-2xl">{currencyConfig.flag || "💵"}</span>
+          </button>
+        </Card>
+
         {/* Security */}
         <Card>
           <div className="flex items-center gap-3 mb-4">
@@ -1656,6 +1680,11 @@ export default function ProfilePage() {
           setLangOpen(false);
           setLocale(next);
         }}
+      />
+      <CurrencySwitcher
+        hideTrigger
+        isOpen={currencyOpen}
+        onClose={() => setCurrencyOpen(false)}
       />
       <ConfirmModal
         isOpen={shutdownOpen}

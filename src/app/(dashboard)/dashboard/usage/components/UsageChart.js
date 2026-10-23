@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
   AreaChart,
@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Card from "@/shared/components/Card";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 
 const fmtTokens = (n) => {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -28,16 +29,17 @@ const VIEW_MODES = [
   { value: "cost", label: "Cost" },
 ];
 
-const VIEW_CONFIG = {
-  tokens:   { dataKey: "tokens",   color: "#6366f1", gradId: "gradTokens",   formatter: fmtTokens,   label: "Tokens" },
-  requests: { dataKey: "requests", color: "#14b8a6", gradId: "gradRequests", formatter: fmtRequests, label: "Requests" },
-  cost:     { dataKey: "cost",     color: "#f59e0b", gradId: "gradCost",     formatter: fmtCost,     label: "Cost" },
-};
-
 export default function UsageChart({ period = "7d" }) {
+  const { formatCost } = useCurrency();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("tokens");
+
+  const viewConfig = useMemo(() => ({
+    tokens:   { dataKey: "tokens",   color: "#6366f1", gradId: "gradTokens",   formatter: fmtTokens,   label: "Tokens" },
+    requests: { dataKey: "requests", color: "#14b8a6", gradId: "gradRequests", formatter: fmtRequests, label: "Requests" },
+    cost:     { dataKey: "cost",     color: "#f59e0b", gradId: "gradCost",     formatter: (n) => formatCost(n, { decimals: 4 }), label: "Cost" },
+  }), [formatCost]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -58,7 +60,7 @@ export default function UsageChart({ period = "7d" }) {
     fetchData();
   }, [fetchData]);
 
-  const cfg = VIEW_CONFIG[viewMode];
+  const cfg = viewConfig[viewMode];
   const hasData = data.some((d) => (d[cfg.dataKey] || 0) > 0);
 
   return (

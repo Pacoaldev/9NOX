@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import PropTypes from "prop-types";
 import Card from "@/shared/components/Card";
 import Badge from "@/shared/components/Badge";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 
 const fmt = (n) => new Intl.NumberFormat().format(n || 0);
 const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
@@ -32,6 +33,7 @@ SortIcon.propTypes = {
  * Render 3 token or cost cells based on viewMode
  */
 function ValueCells({ item, viewMode, isSummary = false }) {
+  const { formatCost } = useCurrency();
   if (viewMode === "tokens") {
     return (
       <>
@@ -53,16 +55,16 @@ function ValueCells({ item, viewMode, isSummary = false }) {
   return (
     <>
       <td className="px-6 py-3 text-right text-text-muted">
-        {isSummary && item.inputCost === undefined ? "—" : fmtCost(item.inputCost)}
+        {isSummary && item.inputCost === undefined ? "—" : formatCost(item.inputCost)}
       </td>
       <td className="px-6 py-3 text-right text-text-muted">
-        {item.cachedCost ? fmtCost(item.cachedCost) : "—"}
+        {item.cachedCost ? formatCost(item.cachedCost) : "—"}
       </td>
       <td className="px-6 py-3 text-right text-text-muted">
-        {isSummary && item.outputCost === undefined ? "—" : fmtCost(item.outputCost)}
+        {isSummary && item.outputCost === undefined ? "—" : formatCost(item.outputCost)}
       </td>
       <td className="px-6 py-3 text-right font-medium text-warning">
-        {fmtCost(item.totalCost || item.cost)}
+        {formatCost(item.totalCost || item.cost)}
       </td>
     </>
   );
