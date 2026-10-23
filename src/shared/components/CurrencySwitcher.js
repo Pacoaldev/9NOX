@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { getCurrencyConfig } from "@/shared/constants/currencies";
 import { useCurrency } from "@/shared/hooks/useCurrency";
