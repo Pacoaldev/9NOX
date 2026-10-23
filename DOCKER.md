@@ -1,31 +1,31 @@
-# Docker
+# 9NOX Docker
 
-Run 9Router in a container. Published image: [`decolua/9router`](https://hub.docker.com/r/decolua/9router) — multi-platform `linux/amd64` + `linux/arm64`.
+Run 9NOX in an isolated container. 9NOX is a fork of [9Router](https://github.com/decolua/9router) with local development Compose configurations and isolated volumes.
 
 ---
 
-# 👤 For Users
+# 👤 Quick Start (Development Compose)
 
-## Quick start
+Run the pre-configured isolated development container:
 
 ```bash
-docker run -d \
-  -p 20128:20128 \
-  -v "$HOME/.9router:/app/data" \
-  -e DATA_DIR=/app/data \
-  --name 9router \
-  decolua/9router:latest
+# Clone and build
+git clone -b dev https://github.com/Pacoaldev/9NOX.git
+cd 9NOX
+
+# Set initial password and start on port 20120
+INITIAL_PASSWORD="your-password" docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-App listens on port `20128`. Open: http://localhost:20128
+Dashboard runs on port `20120`: http://localhost:20120
 
 ## Manage container
 
 ```bash
-docker logs -f 9router        # view logs
-docker stop 9router           # stop
-docker start 9router          # start again
-docker rm -f 9router          # remove
+docker compose -f docker-compose.dev.yml logs -f    # view logs
+docker compose -f docker-compose.dev.yml stop       # stop
+docker compose -f docker-compose.dev.yml start      # start again
+docker compose -f docker-compose.dev.yml down       # remove container
 ```
 
 ## Data persistence
