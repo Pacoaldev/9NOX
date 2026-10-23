@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { Card, Button, Modal } from "@/shared/components";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
@@ -116,6 +116,9 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
   const [testingModelId, setTestingModelId] = useState(null);
   const [testError, setTestError] = useState("");
   const [showAddCustomModel, setShowAddCustomModel] = useState(false);
+  const [isCheckingAll, setIsCheckingAll] = useState(false);
+  const [checkProgress, setCheckProgress] = useState({ done: 0, total: 0 });
+  const checkAbortRef = useRef(null);
 
   const providerAlias = providerAliasOverride || getProviderAlias(providerId);
   const effectiveType = kindFilter || "llm";
@@ -197,6 +200,63 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
     } finally { setTestingModelId(null); }
   };
 
+  const handleCancelCheckAll = () => {
+    if (checkAbortRef.current) {
+      checkAbortRef.current.abort();
+      checkAbortRef.current = null;
+    }
+    setIsCheckingAll(false);
+  };
+
+  const handleCheckAll = async () => {
+    const allModels = [...displayModels, ...myCustomModels];
+    if (isCheckingAll || allModels.length === 0) return;
+    setIsCheckingAll(true);
+    setCheckProgress({ done: 0, total: allModels.length });
+    setTestError("");
+
+    const controller = new AbortController();
+    checkAbortRef.current = controller;
+
+    const concurrency = 4;
+    let index = 0;
+
+    const worker = async () => {
+      while (index < allModels.length && !controller.signal.aborted) {
+        const m = allModels[index++];
+        if (!m?.id) continue;
+        setTestingModelId(m.id);
+        try {
+          const res = await fetch("/api/models/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: `${providerAlias}/${m.id}`, kind: kindFilter }),
+            signal: controller.signal,
+          });
+          const data = await res.json();
+          if (controller.signal.aborted) break;
+          setModelTestResults((prev) => ({ ...prev, [m.id]: data.ok ? "ok" : "error" }));
+          if (!data.ok && data.error) setTestError((prev) => prev || data.error);
+        } catch (err) {
+          if (controller.signal.aborted) break;
+          setModelTestResults((prev) => ({ ...prev, [m.id]: "error" }));
+          setTestError((prev) => prev || (err.message || "Network error"));
+        } finally {
+          setCheckProgress((prev) => ({ ...prev, done: prev.done + 1 }));
+        }
+      }
+    };
+
+    try {
+      const workers = new Array(Math.min(concurrency, allModels.length)).fill(0).map(() => worker());
+      await Promise.all(workers);
+    } finally {
+      setTestingModelId(null);
+      setIsCheckingAll(false);
+      checkAbortRef.current = null;
+    }
+  };
+
   // Built-in models — filter by kindFilter if provided
   const allBuiltIn = getModelsByProviderId(providerId);
   const builtInModels = kindFilter
@@ -220,6 +280,16 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Models{kindFilter ? ` — ${kindFilter.toUpperCase()}` : ""}</h2>
+          {displayModels.length > 0 && (
+            <Button
+              size="sm"
+              variant={isCheckingAll ? "outline" : "secondary"}
+              icon={isCheckingAll ? "progress_activity" : "checklist"}
+              onClick={isCheckingAll ? handleCancelCheckAll : handleCheckAll}
+            >
+              {isCheckingAll ? `Cancel (${checkProgress.done}/${checkProgress.total})` : "Check All"}
+            </Button>
+          )}
         </div>
         {testError && <p className="text-xs text-red-500 mb-3 break-words">{testError}</p>}
 

@@ -14,7 +14,7 @@ Delivery: Work-unit commits per feature slice with Next.js build verification
 
 ## Tasks
 - [x] T1: Implement Currency constants, settings persistence, useCurrency hook, and cost formatting in Usage dashboard (S1) [inline] (tests: tests/unit/currency.test.js pass 4/4)
-- [ ] T2: Implement batch model test API and "Check All active models" UI with progress and cancellation (S2) [inline]
+- [x] T2: Implement batch model test API and "Check All active models" UI with progress and cancellation (S2) [inline] (tests: tests/unit/test-models.test.js pass 3/3)
 - [ ] T3: Reorganize Usage & Analytics UX into tabbed sections with consistent loading and error states (S3) [inline]
 - [ ] T4: Validate compilation with `npm run build` for Docker compatibility and check regressions (S4) [inline]
 

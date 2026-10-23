@@ -65,6 +65,9 @@ export default function ProviderDetailPage() {
   const [modelTestResults, setModelTestResults] = useState({});
   const [modelsTestError, setModelsTestError] = useState("");
   const [testingModelIds, setTestingModelIds] = useState(() => new Set());
+  const [isCheckingAllModels, setIsCheckingAllModels] = useState(false);
+  const [checkAllProgress, setCheckAllProgress] = useState({ done: 0, total: 0, passed: 0, failed: 0 });
+  const checkAllAbortRef = useRef(null);
   const [showAddCustomModel, setShowAddCustomModel] = useState(false);
   const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const [bulkProxyPoolId, setBulkProxyPoolId] = useState("__none__");
@@ -1139,6 +1142,78 @@ export default function ProviderDetailPage() {
     </Modal>
   );
 
+  const handleCancelCheckAllModels = () => {
+    if (checkAllAbortRef.current) {
+      checkAllAbortRef.current.abort();
+      checkAllAbortRef.current = null;
+    }
+    setIsCheckingAllModels(false);
+  };
+
+  const handleCheckAllActiveModels = async (activeIds) => {
+    if (isCheckingAllModels || !activeIds || activeIds.length === 0) return;
+    setIsCheckingAllModels(true);
+    setCheckAllProgress({ done: 0, total: activeIds.length, passed: 0, failed: 0 });
+    setModelsTestError("");
+
+    const controller = new AbortController();
+    checkAllAbortRef.current = controller;
+
+    const concurrency = 4;
+    let index = 0;
+    let passed = 0;
+    let failed = 0;
+
+    const worker = async () => {
+      while (index < activeIds.length && !controller.signal.aborted) {
+        const modelId = activeIds[index++];
+        if (!modelId) continue;
+        setTestingModelIds((prev) => new Set(prev).add(modelId));
+        try {
+          const res = await fetch("/api/models/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: `${providerStorageAlias}/${modelId}` }),
+            signal: controller.signal,
+          });
+          const data = await res.json();
+          if (controller.signal.aborted) break;
+          const ok = !!data.ok;
+          if (ok) passed++; else failed++;
+          setModelTestResults((prev) => ({ ...prev, [modelId]: ok ? "ok" : "error" }));
+          if (!ok && data.error) {
+            setModelsTestError((prev) => prev || data.error);
+          }
+        } catch (err) {
+          if (controller.signal.aborted) break;
+          failed++;
+          setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
+          setModelsTestError((prev) => prev || (err.message || "Network error"));
+        } finally {
+          setTestingModelIds((prev) => {
+            const next = new Set(prev);
+            next.delete(modelId);
+            return next;
+          });
+          setCheckAllProgress((prev) => ({
+            ...prev,
+            done: prev.done + 1,
+            passed,
+            failed,
+          }));
+        }
+      }
+    };
+
+    try {
+      const workers = new Array(Math.min(concurrency, activeIds.length)).fill(0).map(() => worker());
+      await Promise.all(workers);
+    } finally {
+      setIsCheckingAllModels(false);
+      checkAllAbortRef.current = null;
+    }
+  };
+
   const handleTestModel = async (modelId) => {
     if (testingModelIds.has(modelId)) return;
     setTestingModelIds((prev) => new Set(prev).add(modelId));
@@ -1791,7 +1866,19 @@ export default function ProviderDetailPage() {
             ].filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id);
             const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
             return (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {activeIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant={isCheckingAllModels ? "outline" : "secondary"}
+                    icon={isCheckingAllModels ? "progress_activity" : "checklist"}
+                    onClick={isCheckingAllModels ? handleCancelCheckAllModels : () => handleCheckAllActiveModels(activeIds)}
+                  >
+                    {isCheckingAllModels
+                      ? `Cancel (${checkAllProgress.done}/${checkAllProgress.total})`
+                      : `Check All (${activeIds.length})`}
+                  </Button>
+                )}
                 {disabledModelIds.length > 0 && (
                   <Button size="sm" variant="secondary" icon="restart_alt" onClick={handleEnableAll}>
                     Active All
@@ -1806,6 +1893,20 @@ export default function ProviderDetailPage() {
             );
           })()}
         </div>
+        {isCheckingAllModels && checkAllProgress.total > 0 && (
+          <div className="mb-4 w-full rounded-lg border border-border bg-sidebar/50 p-3">
+            <div className="flex justify-between text-xs text-text-muted mb-1.5">
+              <span className="font-medium text-text-main">Checking active models...</span>
+              <span>{checkAllProgress.done} / {checkAllProgress.total} · <span className="text-green-500 font-semibold">{checkAllProgress.passed} ok</span>{checkAllProgress.failed > 0 ? ` · ${checkAllProgress.failed} error` : ""}</span>
+            </div>
+            <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-200"
+                style={{ width: `${Math.round((checkAllProgress.done / checkAllProgress.total) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
         {!!modelsTestError && (
           <div className="mb-3">
             <p className="text-xs text-red-500 break-words">{modelsTestError}</p>
