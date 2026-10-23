@@ -34,6 +34,12 @@ export default function UsageChart({ period = "7d" }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("tokens");
+  const [prevPeriod, setPrevPeriod] = useState(period);
+
+  if (prevPeriod !== period) {
+    setPrevPeriod(period);
+    setLoading(true);
+  }
 
   const viewConfig = useMemo(() => ({
     tokens:   { dataKey: "tokens",   color: "#6366f1", gradId: "gradTokens",   formatter: fmtTokens,   label: "Tokens" },
@@ -41,24 +47,30 @@ export default function UsageChart({ period = "7d" }) {
     cost:     { dataKey: "cost",     color: "#f59e0b", gradId: "gradCost",     formatter: (n) => formatCost(n, { decimals: 4 }), label: "Cost" },
   }), [formatCost]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/usage/chart?period=${period}`);
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      }
-    } catch (e) {
-      console.error("Failed to fetch chart data:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [period]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let ignore = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/usage/chart?period=${period}`);
+        if (!ignore && res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
+      } catch (e) {
+        console.error("Failed to fetch chart data:", e);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      ignore = true;
+    };
+  }, [period]);
 
   const cfg = viewConfig[viewMode];
   const hasData = data.some((d) => (d[cfg.dataKey] || 0) > 0);
