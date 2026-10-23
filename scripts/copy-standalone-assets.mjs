@@ -37,6 +37,14 @@ export function copyStandaloneAssets({ projectRoot = process.cwd(), distDir = pr
     cpSync(serverWrapperSource, serverWrapperDestination, { force: true });
     console.log(`[standalone-assets] Copied custom-server.js to ${serverWrapperDestination}`);
   }
+
+  // Ensure Node 22 recognizes src/sse as an ES module package scope
+  const ssePackageJsonSource = resolve(projectRoot, "src", "sse", "package.json");
+  const ssePackageJsonDestination = resolve(standaloneDir, "src", "sse", "package.json");
+  if (existsSync(ssePackageJsonSource)) {
+    cpSync(ssePackageJsonSource, ssePackageJsonDestination, { force: true });
+    console.log(`[standalone-assets] Copied src/sse/package.json to ${ssePackageJsonDestination}`);
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(dirname(fileURLToPath(import.meta.url)), "copy-standalone-assets.mjs")) {
