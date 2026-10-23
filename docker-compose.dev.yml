@@ -1,0 +1,21 @@
+services:
+  9router-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 9router-dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:20120:20120"
+    volumes:
+      - 9router-dev-data:/app/data
+    environment:
+      DATA_DIR: /app/data
+      PORT: "20120"
+      INITIAL_PASSWORD: ${INITIAL_PASSWORD:?Set INITIAL_PASSWORD in the shell before starting the development container}
+      HOSTNAME: "0.0.0.0"
+      NODE_ENV: production
+
+volumes:
+  9router-dev-data:
+    name: 9router-dev-data

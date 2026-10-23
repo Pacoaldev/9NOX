@@ -10,6 +10,8 @@ import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { aggregateComboCapabilities } from "open-sse/providers/capabilities.js";
 import { resolveProviderId, AI_PROVIDERS } from "@/shared/constants/providers";
+import ComboFlowCard from "./components/ComboFlowCard";
+import useComboFlowStream from "./components/useComboFlowStream";
 
 // Validate combo name: only a-z, A-Z, 0-9, -, _
 const VALID_NAME_REGEX = /^[a-zA-Z0-9_.\-]+$/;
@@ -587,6 +589,9 @@ export default function CombosPage() {
         getCaps={getCaps}
       />
 
+      {/* Combo Flow — live numbered members of the combo in use */}
+      <ComboFlowLiveCard combos={combos} comboStrategies={comboStrategies} />
+
       {/* Create Modal - Use key to force remount and reset state */}
       {showCreateModal && (
         <ComboFormModal
@@ -871,6 +876,28 @@ function ComboCard({ combo, getCaps, comboByName = {}, activeProviders = [], cop
         />
       )}
     </Card>
+  );
+}
+
+/**
+ * Adapter for the live Combo Flow card: maps the page's combo shape
+ * ({ name, models }) to the card's member shape ({ name, members, strategy })
+ * and feeds it the usage stream.
+ */
+function ComboFlowLiveCard({ combos, comboStrategies }) {
+  const { activeRequests, recentRequests, errorProvider } = useComboFlowStream();
+  const mapped = (combos || []).map((c) => ({
+    name: c.name,
+    members: c.models || [],
+    strategy: comboStrategies?.[c.name]?.fallbackStrategy || "fallback",
+  }));
+  return (
+    <ComboFlowCard
+      combos={mapped}
+      activeRequests={activeRequests}
+      recentRequests={recentRequests}
+      errorProvider={errorProvider}
+    />
   );
 }
 

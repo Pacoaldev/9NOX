@@ -17,7 +17,7 @@ const CONN_CACHE_TTL_MS = 30 * 1000;
 const PERIOD_MS = { "24h": 86400000, "7d": 604800000, "30d": 2592000000, "60d": 5184000000 };
 
 // In-memory state shared across Next.js modules
-if (!global._pendingRequests) global._pendingRequests = { byModel: {}, byAccount: {} };
+if (!global._pendingRequests) global._pendingRequests = { byModel: {}, byAccount: {}, comboByEntry: {} };
 if (!global._lastErrorProvider) global._lastErrorProvider = { provider: "", ts: 0 };
 if (!global._statsEmitter) {
   global._statsEmitter = new EventEmitter();
@@ -29,6 +29,7 @@ if (!global._connectionMapCache) global._connectionMapCache = { map: {}, ts: 0 }
 if (!global._statsEmitTimers) global._statsEmitTimers = { pending: null, update: null };
 
 const pendingRequests = global._pendingRequests;
+if (!pendingRequests.comboByEntry) pendingRequests.comboByEntry = {};
 const lastErrorProvider = global._lastErrorProvider;
 const pendingTimers = global._pendingTimers;
 const recentRing = global._recentRing;
@@ -151,9 +152,19 @@ async function calculateCost(provider, model, tokens) {
   }
 }
 
-export function trackPendingRequest(model, provider, connectionId, started, error = false) {
+export function trackPendingRequest(model, provider, connectionId, started, error = false, comboName = null) {
   const modelKey = provider ? `${model} (${provider})` : model;
   const timerKey = `${connectionId}|${modelKey}`;
+
+  // Remember which combo is serving this in-flight request so the Combo Flow
+  // card can highlight the member being tried right now. Keyed by
+  // connection+model so the count bookkeeping below stays untouched.
+  const comboKey = `${connectionId || ""}|${modelKey}`;
+  if (started && comboName) {
+    pendingRequests.comboByEntry[comboKey] = comboName;
+  } else if (!started) {
+    delete pendingRequests.comboByEntry[comboKey];
+  }
 
   if (!pendingRequests.byModel[modelKey]) pendingRequests.byModel[modelKey] = 0;
   pendingRequests.byModel[modelKey] = Math.max(0, pendingRequests.byModel[modelKey] + (started ? 1 : -1));
@@ -208,6 +219,7 @@ export async function getActiveRequests() {
           model: match ? match[1] : modelKey,
           provider: match ? match[2] : "unknown",
           account: accountName, count,
+          comboName: pendingRequests.comboByEntry[`${connectionId}|${modelKey}`] || "",
         });
       }
     }
@@ -224,6 +236,8 @@ export async function getActiveRequests() {
         promptTokens: t.prompt_tokens || t.input_tokens || 0,
         completionTokens: t.completion_tokens || t.output_tokens || 0,
         status: e.status || "ok",
+        comboName: e.comboName || "",
+        latencyMs: e.latencyMs || 0,
       };
     })
     .filter((e) => {

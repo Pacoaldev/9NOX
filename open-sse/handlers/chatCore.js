@@ -61,7 +61,7 @@ export function stripContinuityFields(body) {
   return body;
 }
 
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, customPromptEnabled, customPrompt, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, providerOverrides }) {
+export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, customPromptEnabled, customPrompt, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, providerOverrides, comboName = null }) {
   const { provider, model } = modelInfo;
   const requestStartTime = Date.now();
   // Stable per-session color so all lines of one CLI conversation share a tag
@@ -168,7 +168,12 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   }
 
   const reqLogger = await createRequestLogger(sourceFormat, targetFormat, model);
-  if (clientRawRequest) reqLogger.logClientRawRequest(clientRawRequest.endpoint, clientRawRequest.body, clientRawRequest.headers);
+  if (clientRawRequest) {
+    // Carry the serving combo down to the usage persist step so the Combo Flow
+    // view can attribute a finished member (provider/model/latency) to its combo.
+    if (comboName) clientRawRequest.comboName = comboName;
+    reqLogger.logClientRawRequest(clientRawRequest.endpoint, clientRawRequest.body, clientRawRequest.headers);
+  }
   reqLogger.logRawRequest(body);
   log?.debug?.("FORMAT", `${sourceFormat} → ${targetFormat} | stream=${stream}`);
 
@@ -216,7 +221,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   } else {
     translatedBody = translateRequest(sourceFormat, targetFormat, upstreamModel, body, stream, credentials, provider, reqLogger, stripList, connectionId, clientTool);
     if (!translatedBody) {
-      trackPendingRequest(model, provider, connectionId, false, true);
+      trackPendingRequest(model, provider, connectionId, false, true, comboName);
       return createErrorResult(HTTP_STATUS.BAD_REQUEST, `Failed to translate request for ${sourceFormat} → ${targetFormat}`);
     }
     toolNameMap = translatedBody._toolNameMap;
@@ -335,7 +340,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   if (passthrough && clientTool === "claude") anchorClaudeCache(translatedBody);
 
   const executor = getExecutor(provider);
-  trackPendingRequest(model, provider, connectionId, true);
+  trackPendingRequest(model, provider, connectionId, true, false, comboName);
   appendRequestLog({ model, provider, connectionId, status: "PENDING" }).catch(() => { });
 
   const msgCount = translatedBody.messages?.length || translatedBody.input?.length || translatedBody.contents?.length || translatedBody.request?.contents?.length || 0;
@@ -343,10 +348,10 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
   const streamController = createStreamController({
     onDisconnect: (reason) => {
-      trackPendingRequest(model, provider, connectionId, false);
+      trackPendingRequest(model, provider, connectionId, false, false, comboName);
       if (onDisconnect) onDisconnect(reason);
     },
-    onError: () => trackPendingRequest(model, provider, connectionId, false),
+    onError: () => trackPendingRequest(model, provider, connectionId, false, false, comboName),
     log, provider, model, reqTag
   });
 
@@ -416,7 +421,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     }
     reqLogger.logTargetRequest(providerUrl, providerHeaders, finalBody);
   } catch (error) {
-    trackPendingRequest(model, provider, connectionId, false, true);
+    trackPendingRequest(model, provider, connectionId, false, true, comboName);
     appendRequestLog({ model, provider, connectionId, status: `FAILED ${error.name === "AbortError" ? 499 : HTTP_STATUS.BAD_GATEWAY}` }).catch(() => { });
     saveRequestDetail(buildRequestDetail({
       provider, model, connectionId,
@@ -490,7 +495,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
   // Provider returned error
   if (!providerResponse.ok) {
-    trackPendingRequest(model, provider, connectionId, false, true);
+    trackPendingRequest(model, provider, connectionId, false, true, comboName);
     const { statusCode, message, resetsAtMs } = await parseUpstreamError(providerResponse, executor);
     appendRequestLog({ model, provider, connectionId, status: `FAILED ${statusCode}` }).catch(() => { });
     saveRequestDetail(buildRequestDetail({
@@ -515,7 +520,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
 
   const sharedCtx = { provider, model, body, stream, translatedBody, finalBody, requestStartTime, connectionId, apiKey, clientRawRequest, onRequestSuccess, pxpipe: pxpipeSummary, reqTag, log };
   const appendLog = (extra) => appendRequestLog({ model, provider, connectionId, ...extra }).catch(() => { });
-  const trackDone = () => trackPendingRequest(model, provider, connectionId, false);
+  const trackDone = () => trackPendingRequest(model, provider, connectionId, false, false, comboName);
 
   // Provider forced streaming but client wants JSON. The Responses wire always
   // streams upstream (openaiToOpenAIResponsesRequest pins stream:true), so a
