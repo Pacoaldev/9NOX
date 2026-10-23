@@ -5,6 +5,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { RequestLogger, CardSkeleton, SegmentedControl } from "@/shared/components";
 import UsageStats from "@/shared/components/UsageStats";
 import RequestDetailsTab from "./components/RequestDetailsTab";
+import dynamic from "next/dynamic";
+
+const ProviderLimits = dynamic(() => import("./components/ProviderLimits"), {
+  ssr: false,
+  loading: () => <CardSkeleton />,
+});
 
 const PERIODS = [
   { value: "today", label: "Today" },
@@ -13,6 +19,14 @@ const PERIODS = [
   { value: "30d", label: "30D" },
   { value: "60d", label: "60D" },
   { value: "all", label: "All" },
+];
+
+const USAGE_TABS = [
+  { value: "overview", label: "Overview" },
+  { value: "providers", label: "Providers" },
+  { value: "models", label: "Models" },
+  { value: "limits", label: "Limits" },
+  { value: "requests", label: "Requests" },
 ];
 
 export default function UsagePage() {
@@ -30,8 +44,9 @@ function UsageContent() {
   const [period, setPeriod] = useState("today");
 
   const tabFromUrl = searchParams.get("tab");
-  const activeTab = tabFromUrl && ["overview", "logs", "details"].includes(tabFromUrl)
-    ? tabFromUrl
+  const validTabs = ["overview", "providers", "models", "limits", "requests", "details", "logs"];
+  const activeTab = tabFromUrl && validTabs.includes(tabFromUrl)
+    ? (tabFromUrl === "details" ? "requests" : tabFromUrl)
     : "overview";
 
   const handleTabChange = (value) => {
@@ -41,20 +56,19 @@ function UsageContent() {
     router.push(`/dashboard/usage?${params.toString()}`, { scroll: false });
   };
 
+  const showPeriodSelector = ["overview", "providers", "models"].includes(activeTab);
+
   return (
     <div className="flex min-w-0 flex-col gap-6 px-1 sm:px-0">
       {/* Tabs + period selector on same row */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <SegmentedControl
-          options={[
-            { value: "overview", label: "Overview" },
-            { value: "details", label: "Details" },
-          ]}
-          value={activeTab}
+          options={USAGE_TABS}
+          value={activeTab === "logs" ? "requests" : activeTab}
           onChange={handleTabChange}
           className="w-full sm:w-auto"
         />
-        {activeTab === "overview" && (
+        {showPeriodSelector && (
           <SegmentedControl
             options={PERIODS}
             value={period}
@@ -67,11 +81,26 @@ function UsageContent() {
 
       {activeTab === "overview" && (
         <Suspense fallback={<CardSkeleton />}>
-          <UsageStats period={period} setPeriod={setPeriod} hidePeriodSelector />
+          <UsageStats period={period} setPeriod={setPeriod} hidePeriodSelector section="overview" />
+        </Suspense>
+      )}
+      {activeTab === "providers" && (
+        <Suspense fallback={<CardSkeleton />}>
+          <UsageStats period={period} setPeriod={setPeriod} hidePeriodSelector section="providers" />
+        </Suspense>
+      )}
+      {activeTab === "models" && (
+        <Suspense fallback={<CardSkeleton />}>
+          <UsageStats period={period} setPeriod={setPeriod} hidePeriodSelector section="models" />
+        </Suspense>
+      )}
+      {activeTab === "limits" && (
+        <Suspense fallback={<CardSkeleton />}>
+          <ProviderLimits />
         </Suspense>
       )}
       {activeTab === "logs" && <RequestLogger />}
-      {activeTab === "details" && <RequestDetailsTab />}
+      {activeTab === "requests" && <RequestDetailsTab />}
     </div>
   );
 }

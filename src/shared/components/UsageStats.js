@@ -203,7 +203,7 @@ const PERIODS = [
   { value: "all", label: "All" },
 ];
 
-export default function UsageStats({ period: periodProp, setPeriod: setPeriodProp, hidePeriodSelector = false } = {}) {
+export default function UsageStats({ period: periodProp, setPeriod: setPeriodProp, hidePeriodSelector = false, section = "all" } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -213,7 +213,7 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
-  const [tableView, setTableView] = useState("model");
+  const [tableView, setTableView] = useState(() => (section === "providers" ? "account" : "model"));
   const [viewMode, setViewMode] = useState("costs");
   const [providers, setProviders] = useState([]);
   const [periodLocal, setPeriodLocal] = useState("today");
@@ -437,13 +437,38 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
     }
   }, [stats, tableView, sortBy, sortOrder]);
 
-  if (!stats && !loading) return <div className="text-text-muted">Failed to load usage statistics.</div>;
+  if (!stats && !loading) {
+    return (
+      <Card className="flex flex-col items-center justify-center p-8 text-center gap-3">
+        <span className="material-symbols-outlined text-3xl text-amber-500">warning</span>
+        <p className="text-sm text-text-muted">Failed to load usage statistics.</p>
+        <button
+          onClick={() => {
+            setLoading(true);
+            fetch(`/api/usage/stats?period=${period}`)
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => { if (data) setStats((prev) => ({ ...prev, ...data })); })
+              .finally(() => setLoading(false));
+          }}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+        >
+          Retry
+        </button>
+      </Card>
+    );
+  }
 
   const spinner = (
-    <div className="flex items-center justify-center py-12 text-text-muted">
-      <span className="material-symbols-outlined text-[32px] animate-spin">progress_activity</span>
+    <div className="flex flex-col gap-4 animate-pulse">
+      <div className="h-24 rounded-xl bg-black/5 dark:bg-white/5" />
+      <div className="h-60 rounded-xl bg-black/5 dark:bg-white/5" />
     </div>
   );
+
+  const showOverview = section === "all" || section === "overview";
+  const showProviders = section === "all" || section === "providers";
+  const showModels = section === "all" || section === "models";
+  const showTable = section === "all" || section === "providers" || section === "models";
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -469,10 +494,10 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
       )}
 
       {/* Overview cards */}
-      {loading ? spinner : <OverviewCards stats={stats} />}
+      {showOverview && (loading ? spinner : <OverviewCards stats={stats} />)}
 
       {/* Provider topology + Recent Requests */}
-      {loading ? spinner : (
+      {showOverview && (loading ? spinner : (
         <div className="grid min-w-0 grid-cols-1 items-stretch gap-2 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
           <ProviderTopology
             providers={providers}
@@ -482,64 +507,72 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
           />
           <RecentRequests requests={stats.recentRequests || []} />
         </div>
-      )}
+      ))}
 
       {/* Token / Cost chart - sync period */}
-      {loading ? spinner : <UsageChart period={period} />}
+      {showOverview && (loading ? spinner : <UsageChart period={period} />)}
 
-      {/* Provider and model breakdown charts */}
-      {!loading && (stats.byProvider || stats.byModel) && (
-        <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-2">
+      {/* Provider breakdown chart */}
+      {showProviders && !loading && stats?.byProvider && (
+        <div className="grid min-w-0 grid-cols-1">
           <ProviderBarChart byProvider={stats.byProvider} />
+        </div>
+      )}
+
+      {/* Model breakdown chart */}
+      {showModels && !loading && stats?.byModel && (
+        <div className="grid min-w-0 grid-cols-1">
           <TopModelsChart byModel={stats.byModel} />
         </div>
       )}
 
       {/* Table with dropdown selector */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <select
-            value={tableView}
-            onChange={(e) => setTableView(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50 sm:w-auto"
-            style={{ colorScheme: 'auto' }}
-          >
-            {TABLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 items-center gap-1 rounded-lg border border-border bg-bg-subtle p-1 sm:flex">
-            <button
-              onClick={() => setViewMode("costs")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "costs" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+      {showTable && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <select
+              value={tableView}
+              onChange={(e) => setTableView(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50 sm:w-auto"
+              style={{ colorScheme: 'auto' }}
             >
-              Costs
-            </button>
-            <button
-              onClick={() => setViewMode("tokens")}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
-            >
-              Tokens
-            </button>
+              {TABLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 items-center gap-1 rounded-lg border border-border bg-bg-subtle p-1 sm:flex">
+              <button
+                onClick={() => setViewMode("costs")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "costs" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+              >
+                Costs
+              </button>
+              <button
+                onClick={() => setViewMode("tokens")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+              >
+                Tokens
+              </button>
+            </div>
           </div>
+          {loading ? spinner : activeTableConfig && (
+            <UsageTable
+              title=""
+              columns={activeTableConfig.columns}
+              groupedData={activeTableConfig.groupedData}
+              tableType={tableView}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onToggleSort={toggleSort}
+              viewMode={viewMode}
+              storageKey={activeTableConfig.storageKey}
+              renderSummaryCells={activeTableConfig.renderSummaryCells}
+              renderDetailCells={activeTableConfig.renderDetailCells}
+              emptyMessage={activeTableConfig.emptyMessage}
+            />
+          )}
         </div>
-        {loading ? spinner : activeTableConfig && (
-          <UsageTable
-            title=""
-            columns={activeTableConfig.columns}
-            groupedData={activeTableConfig.groupedData}
-            tableType={tableView}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onToggleSort={toggleSort}
-            viewMode={viewMode}
-            storageKey={activeTableConfig.storageKey}
-            renderSummaryCells={activeTableConfig.renderSummaryCells}
-            renderDetailCells={activeTableConfig.renderDetailCells}
-            emptyMessage={activeTableConfig.emptyMessage}
-          />
-        )}
-      </div>
+      )}
     </div>
   );
 }
