@@ -1,25 +1,32 @@
 <div align="center">
-  <img src="./images/9router.png?1" alt="9Router Dashboard" width="800"/>
+  <img src="./public/logo_9nox.svg" alt="9NOX Logo" width="140" style="margin-bottom: 12px;"/>
   
-  # 9Router - FREE AI Router & Token Saver
+  # 9NOX - AI Router & Token Saver
   
+  > **9NOX** is a customized personal fork of [9Router](https://github.com/decolua/9router) with enhanced multi-currency budgeting, batch model testing, redesigned analytics UX, and combo flow visualization.
+
   **Never stop coding. Save 20-40% tokens with RTK + auto-fallback to FREE & cheap AI models.**
   
   **Connect All AI Code Tools (Claude Code, Cursor, Antigravity, Copilot, Codex, Gemini, OpenCode, Cline, OpenClaw...) to 40+ AI Providers & 100+ Models.**
   
-  [![npm](https://img.shields.io/npm/v/9router.svg)](https://www.npmjs.com/package/9router)
-  [![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
-  [![Docker Pulls](https://img.shields.io/docker/pulls/decolua/9router.svg?logo=docker&label=Docker%20pulls)](https://hub.docker.com/r/decolua/9router)
-  [![GHCR](https://img.shields.io/badge/GHCR-decolua%2F9router-blue?logo=github)](https://github.com/decolua/9router/pkgs/container/9router)
-  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
+  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/Pacoaldev/9NOX/blob/dev/LICENSE)
 
-<a href="https://trendshift.io/repositories/22628" target="_blank"><img src="https://trendshift.io/api/badge/repositories/22628" alt="decolua%2F9router | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-[🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [📖 Setup](#-setup-guide) • [🌐 Website](https://9router.com)
+[🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [📖 Setup](#-setup-guide)
 
 [🇧🇷 Português (Brasil)](./i18n/README.pt-BR.md) • [🇻🇳 Tiếng Việt](./i18n/README.vi.md) • [🇨🇳 中文](./i18n/README.zh-CN.md) • [🇯🇵 日本語](./i18n/README.ja-JP.md) • [🇷🇺 Русский](./i18n/README.ru.md) • [🇹🇭 ไทย](./i18n/README.th.md) • [🇮🇷 فارسی](./i18n/README.fa_IR.md) • [🇮🇩 Indonesia](./i18n/README.id-ID.md) • [🇪🇸 Español](./i18n/README.es.md) • [🇫🇷 Français](./i18n/README.fr.md)
 
 </div>
+
+---
+
+### 🌟 9NOX Custom Features (Fork Enhancements)
+
+- 💱 **Multi-Currency Support**: Switch seamlessly between USD ($), EUR (€), GBP (£), JPY (¥), CNY (¥), CAD, AUD, CHF, INR, and BRL. Costs recalculate dynamically and persist in your settings.
+- 🧪 **Check All Active Models**: One-click batch testing for all configured models of an active provider with bounded concurrency (max 3 concurrent) and per-model diagnostics.
+- 📊 **Redesigned Analytics UX**: Tabbed Usage dashboard (Overview, Cost & Models, Daily History, Request Details, Provider Limits) with synchronized URL states.
+- ⚡ **Combo Flow Visualizer**: Live flow monitoring and failover history tracking across multi-provider combos.
+- 🐳 **Isolated Docker Setup**: Pre-configured `docker-compose.dev.yml` running on port 20120 to isolate personal dev instances from host data.
+
 
 ---
 
@@ -1245,80 +1252,49 @@ Model: cc/claude-opus-4-7
 <details>
 <summary><b>🚀 Deployment</b></summary>
 
-### VPS Deployment
+### Local / Server Deployment
 
 ```bash
-# Clone and install
-git clone https://github.com/decolua/9router.git
-cd 9router
+# Clone 9NOX (dev branch)
+git clone -b dev https://github.com/Pacoaldev/9NOX.git
+cd 9NOX
 npm install
 npm run build
 
-# Configure
+# Configure environment if needed
 export JWT_SECRET="your-secure-secret-change-this"
 export INITIAL_PASSWORD="your-password"
-export DATA_DIR="/var/lib/9router"
 export PORT="20128"
 export HOSTNAME="0.0.0.0"
 export NODE_ENV="production"
-export NEXT_PUBLIC_BASE_URL="http://localhost:20128"
-export NEXT_PUBLIC_CLOUD_URL="https://9router.com"
-export API_KEY_SECRET="endpoint-proxy-api-key-secret"
-export MACHINE_ID_SALT="endpoint-proxy-salt"
 
-# Start
+# Start server
 npm run start
 
-# Or use PM2
+# Or using PM2
 npm install -g pm2
-pm2 start npm --name 9router -- start
+pm2 start npm --name 9nox -- start
 pm2 save
 pm2 startup
 ```
 
-### Docker
+### Docker (Development Environment)
 
-Published images (multi-platform `linux/amd64` + `linux/arm64`):
-
-- Docker Hub: [`decolua/9router`](https://hub.docker.com/r/decolua/9router)
-- GHCR: [`ghcr.io/decolua/9router`](https://github.com/decolua/9router/pkgs/container/9router)
-
-**Quick start (use published image):**
+9NOX provides an isolated development setup running on port **20120** with dedicated volumes:
 
 ```bash
-docker run -d \
-  --name 9router \
-  -p 20128:20128 \
-  -v "$HOME/.9router:/app/data" \
-  -e DATA_DIR=/app/data \
-  decolua/9router:latest
+# Start isolated container
+docker compose -f docker-compose.dev.yml up -d --build
+
+# View logs
+docker compose -f docker-compose.dev.yml logs -f
+
+# Stop container
+docker compose -f docker-compose.dev.yml down
 ```
 
-→ Open http://localhost:20128
+→ Open dashboard at `http://localhost:20120` (Default password: `123456`)
 
-**Build from source (dev):**
-
-```bash
-git clone https://github.com/decolua/9router.git
-cd 9router/app
-docker build -t 9router .
-docker run -d --name 9router -p 20128:20128 \
-  -v "$HOME/.9router:/app/data" -e DATA_DIR=/app/data 9router
-```
-
-**Container defaults:**
-
-- `PORT=20128`
-- `HOSTNAME=0.0.0.0`
-
-**Useful commands:**
-
-```bash
-docker logs -f 9router
-docker restart 9router
-docker stop 9router && docker rm 9router
-docker pull decolua/9router:latest   # update to latest
-```
 
 **Data persistence:** `$HOME/.9router/db/data.sqlite` on host ↔ `/app/data/db/data.sqlite` in container.
 
@@ -1516,29 +1492,11 @@ Authorization: Bearer your-api-key
 → Returns all models + combos in OpenAI format
 ```
 
-## 📧 Support
+## 📧 Project & Upstream
 
-- **Website**: [9router.com](https://9router.com)
-- **GitHub**: [github.com/decolua/9router](https://github.com/decolua/9router)
-- **Issues**: [github.com/decolua/9router/issues](https://github.com/decolua/9router/issues)
-
----
-
-## 👥 Contributors
-
-Thanks to all contributors who helped make 9Router better!
-
-[![Contributors](https://contrib.rocks/image?repo=decolua/9router&max=150&columns=15&anon=1&v=20260309)](https://github.com/decolua/9router/graphs/contributors)
-
----
-
-## 📊 Star Chart
-
-[![Star Chart](https://starchart.cc/decolua/9router.svg?variant=adaptive)](https://starchart.cc/decolua/9router)
-
-## 🔀 Forks
-
-**[OmniRoute](https://github.com/diegosouzapw/OmniRoute)** — A full-featured TypeScript fork of 9Router. Adds 36+ providers, 4-tier auto-fallback, multi-modal APIs (images, embeddings, audio, TTS), circuit breaker, semantic cache, LLM evaluations, and a polished dashboard. 368+ unit tests. Available via npm and Docker.
+- **9NOX Repository**: [github.com/Pacoaldev/9NOX](https://github.com/Pacoaldev/9NOX)
+- **Base Project (Upstream)**: [github.com/decolua/9router](https://github.com/decolua/9router)
+- **Original Upstream Website**: [9router.com](https://9router.com)
 
 ---
 

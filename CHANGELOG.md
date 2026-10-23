@@ -1,3 +1,21 @@
+# 9NOX v1.0.0 (2026-10-23)
+
+> **9NOX** is a customized personal fork of [9Router](https://github.com/decolua/9router).
+
+## Features
+- **Multi-Currency Support**: added currency switching across USD ($), EUR (€), GBP (£), JPY (¥), CNY (¥), CAD, AUD, CHF, INR, BRL; integrated currency conversion hook `useCurrency`, user settings persistence (`settingsRepo`), profile currency selector, and dynamic cost rendering in all tables and cards.
+- **Check All Active Models**: added batch testing for all configured models of an active provider (`POST /api/providers/:id/test-models`) with bounded concurrency (max 3 concurrent) and single-model test capability directly in the provider detail view.
+- **Analytics UX Reorganization**: restructured `/dashboard/usage` into five dedicated tabs (`overview`, `models`, `history`, `requests`, `limits`) with URL parameter synchronization (`?tab=...`), backwards-compatible redirects for legacy params (`details`, `logs`), and integrated Provider Limits management.
+- **Combo Flow Visualizer**: added live flow diagram and execution history for combos, displaying failover progression and provider routing.
+- **New 9NOX Brand & Identity**: updated UI brand identity with custom 9NOX logo, updated favicon, and polished dark/light mode integration.
+- **Isolated Docker Environment**: pre-configured `docker-compose.dev.yml` running on port 20120 to isolate personal dev instances from host data.
+
+## Fixes & Improvements
+- **Git & Docker Ignore**: cleaned up `.gitignore` and `.dockerignore` for local agent artifacts (`odd/`, `.scratch/`, `.atl/`), OS metadata (`Thumbs.db`, `desktop.ini`), and scratch files.
+- **Render Purity & React Rules**: resolved impure function calls and ref access during render in `ProviderTopology.js`, along with hook dependencies.
+
+---
+
 # v0.5.109 (2026-10-23)
 
 ## Features
