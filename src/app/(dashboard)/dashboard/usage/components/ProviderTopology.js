@@ -43,10 +43,10 @@ function ProviderNode({ data }) {
         minWidth: "150px",
       }}
     >
-      <Handle type="target" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="target" position={Position.Bottom} id="bottom" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="target" position={Position.Left} id="left" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="target" position={Position.Right} id="right" className="!bg-transparent !border-0 !w-0 !h-0" />
+      <Handle type="target" position={Position.Top} id="top" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="target" position={Position.Bottom} id="bottom" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="target" position={Position.Left} id="left" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="target" position={Position.Right} id="right" className="bg-transparent! border-0! w-0! h-0!" />
 
       {/* Provider icon */}
       <div
@@ -99,21 +99,21 @@ function RouterNode({ data }) {
   const powering = (data.activeCount || 0) > 0;
   return (
     <div
-      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] ${
+      className={`relative z-1 flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-32.5 ${
         powering
-          ? "topology-router-core border-yellow-300 bg-gradient-to-br from-primary/30 via-yellow-400/20 to-cyan-400/25"
+          ? "topology-router-core border-yellow-300 bg-linear-to-br from-primary/30 via-yellow-400/20 to-cyan-400/25"
           : "border-primary bg-primary/5 shadow-md"
       }`}
     >
-      <Handle type="source" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="source" position={Position.Left} id="left" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="source" position={Position.Right} id="right" className="!bg-transparent !border-0 !w-0 !h-0" />
+      <Handle type="source" position={Position.Top} id="top" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="source" position={Position.Left} id="left" className="bg-transparent! border-0! w-0! h-0!" />
+      <Handle type="source" position={Position.Right} id="right" className="bg-transparent! border-0! w-0! h-0!" />
 
       <img
-        src="/favicon.svg"
+        src="/logo_9nox.svg"
         alt="9Router"
-        className={`w-6 h-6 mr-2 ${powering ? "topology-router-icon" : ""}`}
+        className={`w-6 h-6 mr-2 rounded object-contain ${powering ? "topology-router-icon" : ""}`}
         loading="lazy"
         decoding="async"
       />
@@ -354,6 +354,8 @@ function buildLayout(providers, activeSet, lastSet, errorSet) {
   return { nodes, edges };
 }
 
+const FIT_OPTS = { padding: 0.2, duration: 200 };
+
 export default function ProviderTopology({ providers = [], activeRequests = [], lastProvider = "", errorProvider = "" }) {
   // Serialize to stable string keys so useMemo only re-runs when values actually change
   const activeKey = useMemo(
@@ -369,7 +371,7 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
 
   // Track firstSeen per active provider; drop provider if running too long (BE stuck)
   const firstSeenRef = useRef({});
-  const [tick, setTick] = useState(0);
+  const [activeSet, setActiveSet] = useState(() => new Set());
 
   useEffect(() => {
     const seen = firstSeenRef.current;
@@ -380,23 +382,25 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
     for (const p of Object.keys(seen)) {
       if (!rawActiveSet.has(p)) delete seen[p];
     }
-  }, [rawActiveSet]);
 
-  useEffect(() => {
+    const computeActive = () => {
+      const currentNow = Date.now();
+      const filtered = new Set();
+      for (const p of rawActiveSet) {
+        const ts = seen[p];
+        if (!ts || currentNow - ts < FE_ACTIVE_TIMEOUT_MS) filtered.add(p);
+      }
+      return filtered;
+    };
+
+    setActiveSet(computeActive());
+
     if (rawActiveSet.size === 0) return;
-    const id = setInterval(() => setTick((t) => t + 1), FE_ACTIVE_TICK_MS);
+    const id = setInterval(() => {
+      setActiveSet(computeActive());
+    }, FE_ACTIVE_TICK_MS);
     return () => clearInterval(id);
   }, [rawActiveSet]);
-
-  const activeSet = useMemo(() => {
-    const now = Date.now();
-    const filtered = new Set();
-    for (const p of rawActiveSet) {
-      const ts = firstSeenRef.current[p];
-      if (!ts || now - ts < FE_ACTIVE_TIMEOUT_MS) filtered.add(p);
-    }
-    return filtered;
-  }, [rawActiveSet, tick]);
 
   const { nodes, edges } = useMemo(
     () => buildLayout(providers, activeSet, lastSet, errorSet),
@@ -411,10 +415,9 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
 
   const rfInstance = useRef(null);
   const containerRef = useRef(null);
-  const fitOpts = { padding: 0.2, duration: 200 };
   const onInit = useCallback((instance) => {
     rfInstance.current = instance;
-    setTimeout(() => instance.fitView(fitOpts), 50);
+    setTimeout(() => instance.fitView(FIT_OPTS), 50);
   }, []);
 
   // Re-fit on container resize
@@ -422,7 +425,7 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
-      if (rfInstance.current) rfInstance.current.fitView(fitOpts);
+      if (rfInstance.current) rfInstance.current.fitView(FIT_OPTS);
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -431,13 +434,13 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
   // Re-fit when node count/layout changes
   useEffect(() => {
     if (rfInstance.current) {
-      const id = setTimeout(() => rfInstance.current.fitView(fitOpts), 50);
+      const id = setTimeout(() => rfInstance.current.fitView(FIT_OPTS), 50);
       return () => clearTimeout(id);
     }
   }, [nodes.length]);
 
   return (
-    <div ref={containerRef} className="h-[320px] w-full min-w-0 rounded-lg border border-border bg-bg-subtle/30 sm:h-[480px]">
+    <div ref={containerRef} className="h-80 w-full min-w-0 rounded-lg border border-border bg-bg-subtle/30 sm:h-120">
       {providers.length === 0 ? (
         <div className="h-full flex items-center justify-center text-text-muted text-sm">
           No providers connected

@@ -154,7 +154,10 @@ export default function LoginPage() {
       {/* Faint grid background */}
       <div className="landing-grid absolute inset-0 pointer-events-none" aria-hidden="true" />
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="size-14 rounded-2xl overflow-hidden mb-3 shadow-lg border border-border-subtle bg-surface flex items-center justify-center">
+            <img src="/logo_9nox.svg" alt="9NOX Logo" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-3xl font-bold text-primary mb-2">9Router</h1>
           <p className="text-text-muted">
             {samlAvailable

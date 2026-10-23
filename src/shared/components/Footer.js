@@ -29,14 +29,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
-              <div className="size-6 text-primary">
-                <svg className="w-full h-full" fill="currentColor" viewBox="0 0 48 48">
-                  <path
-                    clipRule="evenodd"
-                    d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z"
-                    fillRule="evenodd"
-                  />
-                </svg>
+              <div className="size-6 overflow-hidden flex items-center justify-center shrink-0">
+                <img src="/logo_9nox.svg" alt="9NOX Logo" className="w-full h-full object-contain" />
               </div>
               <span className="text-xl font-bold text-text-main">
                 {APP_CONFIG.name}

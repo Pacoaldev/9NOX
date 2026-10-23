@@ -36,6 +36,7 @@ const APP_PREFIXES = [
 const APP_FILES = new Set([
   "/favicon.svg", "/favicon.ico", "/file.svg", "/globe.svg", "/next.svg",
   "/vercel.svg", "/window.svg", "/sw.js", "/robots.txt", "/manifest.webmanifest",
+  "/logo_9nox.svg",
 ]);
 
 const APP_PATH_MATCHES = (pathname) =>
