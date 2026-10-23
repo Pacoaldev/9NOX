@@ -25,6 +25,11 @@ product
 
 # misc
 .DS_Store
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
 *.pem
 
 # debug
@@ -103,3 +108,6 @@ start-dev-silent.cjs
 debug.log
 .scratch/
 .atl/
+odd/
+.gemini/
+.agents/

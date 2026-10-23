@@ -14,9 +14,14 @@ build
 dist
 coverage
 
-# Runtime data and logs
+# Runtime data, scratch, and logs
 data
 logs
+.scratch
+.atl
+odd
+.gemini
+.agents
 
 # Local env files (inject at runtime via --env-file or -e)
 .env
