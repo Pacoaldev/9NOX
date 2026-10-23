@@ -415,29 +415,47 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
 
   const rfInstance = useRef(null);
   const containerRef = useRef(null);
-  const onInit = useCallback((instance) => {
-    rfInstance.current = instance;
-    setTimeout(() => instance.fitView(FIT_OPTS), 50);
+  const fitTimerRef = useRef(null);
+  const lastSizeRef = useRef({ w: 0, h: 0 });
+
+  const scheduleFit = useCallback(() => {
+    if (fitTimerRef.current) clearTimeout(fitTimerRef.current);
+    fitTimerRef.current = setTimeout(() => {
+      fitTimerRef.current = null;
+      rfInstance.current?.fitView(FIT_OPTS);
+    }, 80);
   }, []);
 
-  // Re-fit on container resize
+  const onInit = useCallback((instance) => {
+    rfInstance.current = instance;
+    scheduleFit();
+  }, [scheduleFit]);
+
+  // Re-fit on real container size changes only — fitView itself can fire ResizeObserver
+  // and an unguarded loop will crash the renderer ("This page couldn't load").
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      if (rfInstance.current) rfInstance.current.fitView(FIT_OPTS);
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      const prev = lastSizeRef.current;
+      if (Math.abs(width - prev.w) < 1 && Math.abs(height - prev.h) < 1) return;
+      lastSizeRef.current = { w: width, h: height };
+      scheduleFit();
     });
     ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+    return () => {
+      ro.disconnect();
+      if (fitTimerRef.current) clearTimeout(fitTimerRef.current);
+    };
+  }, [scheduleFit]);
 
   // Re-fit when node count/layout changes
   useEffect(() => {
-    if (rfInstance.current) {
-      const id = setTimeout(() => rfInstance.current.fitView(FIT_OPTS), 50);
-      return () => clearTimeout(id);
-    }
-  }, [nodes.length]);
+    scheduleFit();
+  }, [nodes.length, scheduleFit]);
 
   return (
     <div ref={containerRef} className="h-80 w-full min-w-0 rounded-lg border border-border bg-bg-subtle/30 sm:h-120">
@@ -453,7 +471,7 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={fitOpts}
+          fitViewOptions={FIT_OPTS}
           minZoom={0.1}
           maxZoom={2}
           onInit={onInit}
