@@ -54,30 +54,31 @@ Container path: `/app/data/db/data.sqlite`
 
 ```bash
 docker run -d \
-  -p 20128:20128 \
-  -v "$HOME/.9router:/app/data" \
+  -p 20120:20120 \
+  -v 9router-dev-data:/app/data \
   -e DATA_DIR=/app/data \
-  -e PORT=20128 \
+  -e PORT=20120 \
   -e HOSTNAME=0.0.0.0 \
-  -e DEBUG=true \
-  --name 9router \
-  decolua/9router:latest
+  -e INITIAL_PASSWORD=123456 \
+  --name 9nox-dev \
+  9nox-9router-dev:latest
 ```
 
 ## Optional Headroom sidecar
 
-The 9Router image does not bundle Python or Headroom. To use Headroom in Docker, run it as a separate service and point 9Router at that proxy:
+The 9NOX image does not bundle Python or Headroom. To use Headroom in Docker, run it as a separate service and point 9NOX at that proxy:
 
 ```yaml
 services:
-  9router:
-    image: decolua/9router:latest
+  9nox:
+    build: .
     ports:
-      - "20128:20128"
+      - "20120:20120"
     volumes:
-      - "$HOME/.9router:/app/data"
+      - 9router-dev-data:/app/data
     environment:
       DATA_DIR: /app/data
+      PORT: "20120"
       HEADROOM_URL: http://headroom:8787
     depends_on:
       - headroom
@@ -92,52 +93,19 @@ In the dashboard, open `Endpoint` → `Token Saver` → `Headroom`, confirm the 
 
 If Headroom runs on the Docker host instead of as a sidecar, use `http://host.docker.internal:8787` on macOS/Windows. On Linux, add `--add-host=host.docker.internal:host-gateway` or the equivalent compose `extra_hosts` entry.
 
-## Update to latest
-
-```bash
-docker pull decolua/9router:latest
-docker rm -f 9router
-# re-run the quick start command
-```
-
-To pin a specific version instead of following `latest`, use a numbered image tag:
-
-```bash
-docker pull decolua/9router:0.5.81
-```
-
 ---
 
 # 🛠 For Developers
 
-## Build image locally (test)
+## Build image locally
 
 ```bash
-docker build -t 9router .
+# Build 9NOX development image
+docker compose -f docker-compose.dev.yml build
 
-docker run --rm -p 20128:20128 \
-  -v "$HOME/.9router:/app/data" \
-  -e DATA_DIR=/app/data \
-  9router
+# Or standard docker build
+docker build -t 9nox .
 ```
-
-The Dockerfile uses the official Alpine and npm registries by default. Regional mirrors can be supplied when needed:
-
-```bash
-docker build \
-  --build-arg ALPINE_MIRROR=mirrors.aliyun.com \
-  --build-arg NPM_REGISTRY=https://registry.npmmirror.com/ \
-  -t 9router .
-```
-
-## Publish (automatic via CI)
-
-Push a Docker-safe semver git tag `vX.Y.Z` (or a prerelease such as `vX.Y.Z-rc.1`) → GitHub Actions builds `linux/amd64` and `linux/arm64` on native runners, health-checks each platform image, verifies the resulting manifest and `/api/health`, then publishes:
-
-- `ghcr.io/decolua/9router:X.Y.Z` + `:latest`
-- `decolua/9router:X.Y.Z` + `:latest`
-
-The `v` prefix is used only for the git tag; image tags omit it. A stable tag push promotes `latest`, but a prerelease tag such as `vX.Y.Z-rc.1` publishes only its numbered image by default. Prereleases require an explicit manual `promote_latest` opt-in. Promotion happens only after both native platform builds, both platform health checks, manifest inspection, and the resolved-manifest smoke test succeed. A failed or timed-out platform build therefore cannot move `latest`.
 
 The workflow rejects SemVer build metadata such as `v1.2.3+build.7` because the `+` form is not a valid Docker image tag. The git tag and both `package.json` versions must match exactly.
 

@@ -11,7 +11,7 @@ export default function Footer() {
               <div className="size-6 rounded overflow-hidden flex items-center justify-center shrink-0">
                 <img src="/logo_9nox.svg" alt="9NOX Logo" className="w-full h-full object-contain" />
               </div>
-              <h3 className="text-white text-lg font-bold">9Router</h3>
+              <h3 className="text-white text-lg font-bold">9NOX</h3>
             </div>
             <p className="text-gray-500 text-sm max-w-xs mb-6">
               The unified endpoint for AI generation. Connect, route, and manage your AI providers with ease.

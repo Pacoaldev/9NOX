@@ -112,13 +112,13 @@ function RouterNode({ data }) {
 
       <img
         src="/logo_9nox.svg"
-        alt="9Router"
+        alt="9NOX"
         className={`w-6 h-6 mr-2 rounded object-contain ${powering ? "topology-router-icon" : ""}`}
         loading="lazy"
         decoding="async"
       />
       <span className={`text-sm font-bold ${powering ? "topology-router-label text-yellow-300" : "text-primary"}`}>
-        9Router
+        9NOX
       </span>
       {data.activeCount > 0 && (
         <span className="ml-2 px-1.5 py-0.5 rounded-full bg-yellow-400 text-black text-xs font-bold topology-router-badge">

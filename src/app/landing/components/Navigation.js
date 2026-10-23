@@ -19,7 +19,7 @@ export default function Navigation() {
           <div className="size-8 rounded overflow-hidden flex items-center justify-center shrink-0">
             <img src="/logo_9nox.svg" alt="9NOX Logo" className="w-full h-full object-contain" />
           </div>
-          <h2 className="text-white text-xl font-bold tracking-tight">9Router</h2>
+          <h2 className="text-white text-xl font-bold tracking-tight">9NOX</h2>
         </button>
 
         {/* Desktop menu */}

@@ -158,7 +158,7 @@ export default function LoginPage() {
           <div className="size-14 rounded-2xl overflow-hidden mb-3 shadow-lg border border-border-subtle bg-surface flex items-center justify-center">
             <img src="/logo_9nox.svg" alt="9NOX Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">9Router</h1>
+          <h1 className="text-3xl font-bold text-primary mb-2">9NOX</h1>
           <p className="text-text-muted">
             {samlAvailable
               ? "Sign in with SAML 2.0 Single Sign-On"
